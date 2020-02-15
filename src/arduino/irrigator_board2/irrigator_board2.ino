@@ -138,37 +138,19 @@ void print_sensors() {
   Serial.println(enc_left_val);
   Serial.println(enc_right_val);
   Serial.println(dist1);
-  Serial.println(dist1);  
+  Serial.println(dist2);  
   Serial.println("----");  
 }
 
 void loop() {
   read_sonar1();
   read_sonar2();
-  
+ 
   delay(100);
   t++;
   if (t == TTH) {
-    t = 0;
-    print_sensors();
+    t = 0;    
     Serial.println(new_cmd);
+    print_sensors();
   }
-  
-/*
-  
-  sl_val = (3 * sl_val + analogRead(sl_pin)) / 4;
-  sr_val = (3 * sl_val + analogRead(sr_pin)) / 4;
-  */
-  /*
-  t++;
-  if (t == 512) {
-    t = 0;
-  Serial.print(" Distance: ");
-  Serial.println(dist);
-  Serial.print("Proximity: ");
-  Serial.print(sl_val);
-  Serial.print(" ");
-  Serial.println(sr_val);
-  }
-  */
 }
