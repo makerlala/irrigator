@@ -313,10 +313,6 @@ static inline void off_pump() {
 	send_spi(fd1, lock1, 'n');
 }
 
-static inline void get_image() {
-	system("./get-one-shot-jetson.sh");
-}
-
 int run_ai() {
 	return system("./run-all-models.sh");
 }
