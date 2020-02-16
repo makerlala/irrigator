@@ -53,6 +53,10 @@ It also installs tflite for Python 3.6 on ARM 64-bit. For more details, see http
 
 In addition to tflite, you need to install ``pillow``.
 
+### Camera
+
+Useful documentation: https://developer.download.nvidia.com/embedded/L4T/r32_Release_v1.0/Docs/Accelerated_GStreamer_User_Guide.pdf?z5qCkGUGPtbvZ3lvPXcknORRqeSXe0eujwaRA5dYvv53Mu0JJqvLkW4P-p9ZPQqIFF64zuqLYvH9X4x0BYnwPOKIW_G-jNhTHA8mndu6oN7boIXna0siQdXJ6WfAVMBSERhvKMO_1RT8x_Znea0gxseW01ix6l9WK3Df6r4exbpFhJL8AuU
+
 ### Bazel
 
 I downloaded bazel binary (bazel-0.19.2-linux-x86_64) from (https://github.com/bazelbuild/bazel/releases/tag/0.19.2)[https://github.com/bazelbuild/bazel/releases/tag/0.19.2] into ``isaac_sdk`` folder.
