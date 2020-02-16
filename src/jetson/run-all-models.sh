@@ -4,6 +4,7 @@
 python3 -m venv ../../env3
 source ../../env3/bin/activate
 
+MODELS_PATH="../../models"
 TSTAMP=`date +%Y-%m-%d-%H-%M-%S`
 FILE="one-shot-$TSTAMP.jpg"
 OUT_FILE="obj-det-$TSTAMP.txt"
@@ -18,13 +19,13 @@ fi
 sleep 1
 
 #echo "*** mobilenet_v1_1.0_224_quant_and_labels" > $OUT_FILE
-#python3 label_image.py -m models/mobilenet_v1_1.0_224_quant_and_labels/mobilenet_v1_1.0_224_quant.tflite -l models/mobilenet_v1_1.0_224_quant_and_labels/labels_mobilenet_quant_v1_224.txt -i $FILE | head -n 3 >> $OUT_FILE
+#python3 label_image.py -m $MODELS_PATH/mobilenet_v1_1.0_224_quant_and_labels/mobilenet_v1_1.0_224_quant.tflite -l $MODELS_PATH/mobilenet_v1_1.0_224_quant_and_labels/labels_mobilenet_quant_v1_224.txt -i $FILE | head -n 3 >> $OUT_FILE
 
 echo "*** coco_ssd_mobilenet_v1_1.0_quant_2018_06_29" >> $OUT_FILE
-python3 label_image_boxes.py -m models/coco_ssd_mobilenet_v1_1.0_quant_2018_06_29/detect.tflite -l models/coco_ssd_mobilenet_v1_1.0_quant_2018_06_29/labelmap.txt -i $FILE | head -n 3 >> $OUT_FILE
+python3 label_image_boxes.py -m $MODELS_PATH/coco_ssd_mobilenet_v1_1.0_quant_2018_06_29/detect.tflite -l $MODELS_PATH/coco_ssd_mobilenet_v1_1.0_quant_2018_06_29/labelmap.txt -i $FILE | head -n 3 >> $OUT_FILE
 
 echo "*** inception_resnet_v2_2018_04_27" >> $OUT_FILE
-python3 label_image.py -m models/inception_resnet_v2_2018_04_27/inception_resnet_v2.tflite -l models/inception_resnet_v2_2018_04_27/labels.txt -i $FILE | head -n 3 >> $OUT_FILE
+python3 label_image.py -m $MODELS_PATH/inception_resnet_v2_2018_04_27/inception_resnet_v2.tflite -l $MODELS_PATH/inception_resnet_v2_2018_04_27/labels.txt -i $FILE | head -n 3 >> $OUT_FILE
 
 deactivate
 
