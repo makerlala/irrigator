@@ -25,14 +25,13 @@ volatile int run_flag = 1;
 
 static uint32_t mode;
 static uint8_t bits = 8;
-static char *input_file;
-static char *output_file;
 static uint32_t speed = 1000;
 static uint16_t delay;
 static int verbose;
-static int transfer_size;
-static int iterations;
-static int interval = 5; /* interval in seconds for showing transfer rate */
+
+// sensors
+volatile float dist1;
+volatile float dist2;
 
 union _spi_float {
 	float val;
@@ -127,7 +126,6 @@ static int unescape(char *_dst, char *_src, size_t len)
 static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len)
 {
 	int ret;
-	int out_fd;
 	struct spi_ioc_transfer tr = {
 		.tx_buf = (unsigned long)tx,
 		.rx_buf = (unsigned long)rx,
@@ -157,22 +155,12 @@ static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len)
 		pabort("can't send spi message");
 
 	if (verbose)
-		hex_dump(tx, len, 32, "TX");
-
-	if (output_file) {
-		out_fd = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-		if (out_fd < 0)
-			pabort("could not open output file");
-
-		ret = write(out_fd, rx, len);
-		if (ret != len)
-			pabort("not all bytes written to output file");
-
-		close(out_fd);
-	}
+		hex_dump(tx, len, 32, "TX");	
 
 	if (verbose)
 		hex_dump(rx, len, 32, "RX");
+
+	// usleep(200000);
 }
 
 static void transfer_escaped_string(int fd, char *str)
@@ -273,26 +261,88 @@ uint8_t send_spi(int spi_fd, pthread_mutex_t lock, uint8_t command) {
 	uint8_t ret = 0;
 	pthread_mutex_lock(&lock);
 	transfer(spi_fd, &command, &ret, 1);
-	pthread_mutex_unlock(&lock);
+	pthread_mutex_unlock(&lock);	
 	return ret;
 }
 
+static inline void go_forward() {
+	send_spi(fd1, lock1, 'w');
+}
+
+static inline void go_left() {
+	send_spi(fd1, lock1, 'a');
+}
+
+static inline void go_left_90() {
+	send_spi(fd1, lock1, 'a');
+	sleep(3);
+	send_spi(fd1, lock1, 'q');
+}
+
+static inline void go_right() {
+	send_spi(fd1, lock1, 'd');
+}
+
+static inline void go_right_90() {
+	send_spi(fd1, lock1, 'd');
+	sleep(3);
+	send_spi(fd1, lock1, 'q');
+}
+
+static inline void go_backwards() {
+	send_spi(fd1, lock1, 's');
+}
+
+static inline void stop() {
+	send_spi(fd1, lock1, 'q');
+}
+
+static inline void on_light() {
+	send_spi(fd1, lock1, 'l');
+}
+
+static inline void off_light() {
+	send_spi(fd1, lock1, 'k');
+}
+
+static inline void on_pump() {
+	send_spi(fd1, lock1, 'm');
+}
+
+static inline void off_pump() {
+	send_spi(fd1, lock1, 'n');
+}
+
+static inline void get_image() {
+	system("./get-one-shot-jetson.sh");
+}
+
+int run_ai() {
+	return system("./run-all-models.sh");
+}
+
 void* read_sensors(void *args) {
+	int t = 0;
 	while (run_flag) {
 		int left_enc = read_int_spi(fd2, lock2, (uint8_t)'0');
 		int right_enc = read_int_spi(fd2, lock2, (uint8_t)'1');
-		float dist1 = read_float_spi(fd2, lock2, (uint8_t)'2');
-		float dist2 = read_float_spi(fd2, lock2, (uint8_t)'3');
-		float current_all = read_float_spi(fd1, lock1, (uint8_t)'0');
-		float water_level = read_float_spi(fd1, lock1, (uint8_t)'4');
-		printf("Encoder left : %d\n", left_enc);
-		printf("Encoder right: %d\n", right_enc);
-		printf("Distance 1: %4.2f\n", dist1);
-		printf("Distance 2: %4.2f\n", dist2);
-		printf("Current all: %4.2f\n", current_all);
-		printf("Water level: %4.2f\n", water_level);
-		printf("-------------------\n");
-		sleep(1);
+		dist1 = read_float_spi(fd2, lock2, (uint8_t)'2');
+		dist2 = read_float_spi(fd2, lock2, (uint8_t)'3');
+		// float current_all = read_float_spi(fd1, lock1, (uint8_t)'0');
+		// float water_level = read_float_spi(fd1, lock1, (uint8_t)'4');
+		t++;
+		if (t == 8) {
+			t = 0;
+			// printf("Encoder left : %d\n", left_enc);
+			// printf("Encoder right: %d\n", right_enc);
+			printf("Distance 1: %4.2f\n", dist1);
+			printf("Distance 2: %4.2f\n", dist2);
+			// printf("Current all: %4.2f\n", current_all);
+			// printf("Water level: %4.2f\n", water_level);
+			printf("-------------------\n");
+		}
+		usleep(250000);
+		// sleep(1);
 	}
 	printf("Exiting sensors reading thread ...\n");
 	return NULL;
@@ -305,22 +355,54 @@ int main() {
 	fd2 = open_spi(device2);
 	
 	if (pthread_mutex_init(&lock1, NULL) != 0) { 
-        pabort("Mutex init has failed (lock1) \n"); 
-        return 1; 
-    }
+       		pabort("Mutex init has failed (lock1) \n"); 
+        	return 1; 
+    	}
 	if (pthread_mutex_init(&lock2, NULL) != 0) { 
-        pabort("Mutex init has failed (lock2) \n"); 
-        return 1; 
-    }
+        	pabort("Mutex init has failed (lock2) \n"); 
+        	return 1; 
+    	}
 
 	asynctask(read_sensors, NULL);
 
-	while (run_flag) {
-		sleep(3);
+	// wait a bit
+	sleep(2);
+
+	while (run_flag) {		
+		go_forward();
+		if (dist1 < 100 || dist2 < 100) {
+		// if (dist1 < 100) {
+			stop();
+			usleep(250000);
+			on_light();
+			// sleep(1);
+			int ret = run_ai();
+			printf("AI returned: %d\n", ret);
+			if ((ret >> 8) == 1) {
+				printf("Plant detected!\n");
+				go_forward();
+				sleep(2);
+				stop();
+				usleep(250000);
+				on_pump();
+				sleep(5);
+				off_pump();
+				usleep(250000);
+				go_backwards();
+				sleep(2);
+				stop();
+				usleep(250000);
+			}
+			off_light();
+			usleep(250000);
+			go_left_90();
+		}				
+		sleep(1);
 	} 
 
 	printf("Exiting main thread ...\n");
 
+	stop();
 	close(fd1);
 	close(fd2);
 
