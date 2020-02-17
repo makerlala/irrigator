@@ -1,0 +1,42 @@
+{
+	"name": "irrigator",
+	"modules": [
+    "irrigator:irrigator_components"
+  ],
+	"graph": {
+    "nodes": [
+      {
+        "name": "driver",
+        "components": [
+          {
+            "name": "driver",
+            "type": "Driver"
+          }
+         ]
+      },
+			{
+        "name": "detector",
+        "components": [
+          {
+            "name": "message_ledger",
+            "type": "isaac::alice::MessageLedger"
+          },
+          {
+            "name": "detector",
+            "type": "Detector"
+          }
+        ]
+      }
+    ],
+    "edges": [
+			{
+				"source": "irrigator/driver/command",
+      	"target": "irrigator/detector/command"
+			},
+			{
+				"source": "irrigator/detector/result",
+      	"target": "irrigator/driver/result"
+			}
+		]
+  }
+}
