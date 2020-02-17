@@ -4,11 +4,38 @@ The Irrigator - an autonomous robot that takes care of your plants
 
 ## Hardware
 
-### Links
+For more details about the hardware, please see my project on Hackster.io: https://www.hackster.io/dumiloghin/the-irrigator-80f1d5
 
-Jetson Nano header: https://www.element14.com/community/community/designcenter/single-board-computers/blog/2019/05/21/nvidia-jetson-nano-developer-kit-pinout-and-diagrams
 
 ## Setup Dev Environment
+
+### x86_64 Dev Host
+
+#### Bazel
+
+I downloaded bazel binary (bazel-0.19.2-linux-x86_64) from (https://github.com/bazelbuild/bazel/releases/tag/0.19.2)[https://github.com/bazelbuild/bazel/releases/tag/0.19.2] into ``isaac_sdk`` folder.
+
+#### Isaac SDK
+
+Download Isaac SDK and unzip it into a folder called ``isaac_sdk``.
+
+Copy the content of ``src/jetson/isaac`` into a folder called ``irrigator`` under ``packages``:
+
+```
+cd isaac_sdk
+mkdir -p packages/irrigator
+cp ~/git/irrigator/src/jetson/isaac/* packages/irrigator/
+cd packages/irrigator/
+bazel build irrigator
+```
+
+Bazel run will not work on the development host.
+
+Push the package to Jetson Nano:
+
+```
+./engine/build/deploy.sh --remote_user <user> -p //packages/irrigator:irrigator -h <jetson IP> -d jetpack43
+```
 
 ### Jetson Nano Setup
 
@@ -56,7 +83,3 @@ In addition to tflite, you need to install ``pillow``.
 ### Camera
 
 Useful documentation: https://developer.download.nvidia.com/embedded/L4T/r32_Release_v1.0/Docs/Accelerated_GStreamer_User_Guide.pdf?z5qCkGUGPtbvZ3lvPXcknORRqeSXe0eujwaRA5dYvv53Mu0JJqvLkW4P-p9ZPQqIFF64zuqLYvH9X4x0BYnwPOKIW_G-jNhTHA8mndu6oN7boIXna0siQdXJ6WfAVMBSERhvKMO_1RT8x_Znea0gxseW01ix6l9WK3Df6r4exbpFhJL8AuU
-
-### Bazel
-
-I downloaded bazel binary (bazel-0.19.2-linux-x86_64) from (https://github.com/bazelbuild/bazel/releases/tag/0.19.2)[https://github.com/bazelbuild/bazel/releases/tag/0.19.2] into ``isaac_sdk`` folder.
