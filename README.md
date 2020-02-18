@@ -1,15 +1,21 @@
 # irrigator
 
-The Irrigator - an autonomous robot that takes care of your plants
+The Irrigator - an AI-powered irrigation robot.
+
+## Presentation
+
+The Irrigator - https://youtu.be/p2FFj9mP8a0
+
+The Making Of - https://youtu.be/KjNYCxCwHMo
 
 ## Hardware
 
-For more details about the hardware, please see my project on Hackster.io: https://www.hackster.io/dumiloghin/the-irrigator-80f1d5
+For more details about the hardware, please read my project on Hackster.io (https://www.hackster.io/dumiloghin/the-irrigator-80f1d5).
 
 
 ## Setup Dev Environment
 
-### x86_64 Dev Host
+### On a x86_64 Dev Host
 
 #### Bazel
 
@@ -37,11 +43,13 @@ Push the package to Jetson Nano:
 ./engine/build/deploy.sh --remote_user <user> -p //packages/irrigator:irrigator -h <jetson IP> -d jetpack43
 ```
 
-### Jetson Nano Setup
+### Jetson Nano
+
+Setup an SD card and power on the Nano, as described here: https://developer.nvidia.com/embedded/learn/get-started-jetson-nano-devkit.
 
 #### WiFi
 
-Jetson Nano does not come with an WiFi adapter (this is a big issue, in my opinion). One option is to install an Intel WiFi + Bluetooth adapter, as described by JetsonHacks (https://www.jetsonhacks.com/2019/04/08/jetson-nano-intel-wifi-and-bluetooth/). However, I just purchased a TP-link AC1300 Archer T4U WiFi USB adapter. My adapter uses an Realtek RTL8812BU and not RTL8812AU. Here is how I installed the correct driver:
+Jetson Nano does not come with a WiFi adapter (this is a big issue, in my opinion). One option is to install an Intel WiFi + Bluetooth adapter, as described by JetsonHacks (https://www.jetsonhacks.com/2019/04/08/jetson-nano-intel-wifi-and-bluetooth/). However, I just purchased a TP-link AC1300 Archer T4U WiFi USB adapter. My adapter uses a Realtek RTL8812BU and not RTL8812AU. Here is how I installed the correct driver:
 
 ```
 sudo apt install dkms
@@ -67,12 +75,12 @@ To make sure rtl88x2bu is loaded, add a file called ``rtl88x2bu.conf`` in ``/etc
 /sbin/modprobe 88x2bu
 ```
 
-### TFLite
+### TFLite (TensorFlow Lite)
 
 Make sure you have the following models in the ``models`` subfolder:
-* mobilenet_v1_1.0_224_quant_and_labels
-* coco_ssd_mobilenet_v1_1.0_quant_2018_06_29
-* inception_resnet_v2_2018_04_27
+* [mobilenet_v1_1.0_224_quant_and_labels](https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_2018_02_22/mobilenet_v1_1.0_224.tgz)
+* [coco_ssd_mobilenet_v1_1.0_quant_2018_06_29](https://storage.googleapis.com/download.tensorflow.org/models/tflite/coco_ssd_mobilenet_v1_1.0_quant_2018_06_29.zip)
+* [inception_resnet_v2_2018_04_27](https://storage.googleapis.com/download.tensorflow.org/models/tflite/model_zoo/upload_20180427/inception_resnet_v2_2018_04_27.tgz)
 
 Make sure you have Python 3.6 and pip3. My ``install.sh`` script will help you install them.
 
@@ -83,3 +91,11 @@ In addition to tflite, you need to install ``pillow``.
 ### Camera
 
 Useful documentation: https://developer.download.nvidia.com/embedded/L4T/r32_Release_v1.0/Docs/Accelerated_GStreamer_User_Guide.pdf?z5qCkGUGPtbvZ3lvPXcknORRqeSXe0eujwaRA5dYvv53Mu0JJqvLkW4P-p9ZPQqIFF64zuqLYvH9X4x0BYnwPOKIW_G-jNhTHA8mndu6oN7boIXna0siQdXJ6WfAVMBSERhvKMO_1RT8x_Znea0gxseW01ix6l9WK3Df6r4exbpFhJL8AuU
+
+In the end, the following command captures good-enough photos,
+
+```
+timeout 4 gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM),width=3820, height=2464, framerate=21/1, format=NV12' ! nvvidconv flip-method=2 ! 'video/x-raw,width=960, height=616, format=I420' ! nvjpegenc ! filesink location=$FILE -e
+```
+
+where $FILE is the output file name. Note the use of ``timeout`` command, otherwise, the pipeline does not end.
