@@ -2,9 +2,9 @@
 
 # make sure you cd into src/jetson and env3 is in the root of this repo
 python3 -m venv ../../env3
-source ../../env3/bin/activate
+source ../../../env3/bin/activate
 
-MODELS_PATH="../../models"
+MODELS_PATH="../../../models"
 TSTAMP=`date +%Y-%m-%d-%H-%M-%S`
 FILE="one-shot-$TSTAMP.jpg"
 OUT_FILE="obj-det-$TSTAMP.txt"
