@@ -1,3 +1,15 @@
+// The code on which this is based on is lincensed under GPL-2.0-only
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * SPI testing utility (using spidev driver)
+ *
+ * Copyright (c) 2007  MontaVista Software, Inc.
+ * Copyright (c) 2007  Anton Vorontsov <avorontsov@ru.mvista.com>
+ *
+ * Cross-compile with cross-gcc -I/path/to/cross-kernel/include
+ *
+ * Modified by Dumi Loghin - 2020.
+ */
 #include <stdint.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -337,6 +349,7 @@ void Driver::tick() {
 			auto proto = rx_result().getProto();
   			const std::string message = proto.getMessage();
 			if (message == "yes") {
+				// state 2 -> irrigate
 				_state = 2;
 				go_forward();
 				sleep(2);

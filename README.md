@@ -99,3 +99,11 @@ timeout 4 gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM),width=3820
 ```
 
 where $FILE is the output file name. Note the use of ``timeout`` command, otherwise, the pipeline does not end.
+
+## Licence
+
+Some of the code is licensed under:
+
+* Apache License, Version 2.0 - (label_image.py and other scripts in src/jetson/driver)
+* GNU General Public License, version 2 (spi code in src/jetson/driver and src/jetson/isaac)
+

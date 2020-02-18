@@ -1,3 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * SPI testing utility (using spidev driver)
+ *
+ * Copyright (c) 2007  MontaVista Software, Inc.
+ * Copyright (c) 2007  Anton Vorontsov <avorontsov@ru.mvista.com>
+ *
+ * Cross-compile with cross-gcc -I/path/to/cross-kernel/include
+ *
+ * Modified by Dumi Loghin - 2020.
+ */
+
 #include <stdint.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -14,6 +26,7 @@
 #include <pthread.h>
 #include  <signal.h>
 
+// SPI constants and variables
 static const char *device1 = "/dev/spidev0.0";
 static const char *device2 = "/dev/spidev1.0";
 
@@ -52,6 +65,13 @@ static void pabort(const char *s)
 	abort();
 }
 
+// handle SIGINT (Ctrl+c)
+void  sigint_handler(int sig) {
+	printf("Exiting on Ctrl+C ...\n");
+	run_flag = 0;
+}
+
+// generic asynchronous task launcher
 int asynctask(void* (*task)(void* args), void* arg) {
 	pthread_t th;
 	pthread_attr_t attr;
@@ -62,14 +82,7 @@ int asynctask(void* (*task)(void* args), void* arg) {
 	return pthread_create(&th, &attr, task, arg);
 }
 
-void  sigint_handler(int sig) {
-	printf("Exiting on Ctrl+C ...\n");
-	run_flag = 0;
-}
-
-static void hex_dump(const void *src, size_t length, size_t line_size,
-		     char *prefix)
-{
+static void hex_dump(const void *src, size_t length, size_t line_size, char *prefix) {
 	int i = 0;
 	const unsigned char *address = src;
 	const unsigned char *line = address;
@@ -99,8 +112,7 @@ static void hex_dump(const void *src, size_t length, size_t line_size,
  *  Unescape - process hexadecimal escape character
  *      converts shell input "\x23" -> 0x23
  */
-static int unescape(char *_dst, char *_src, size_t len)
-{
+static int unescape(char *_dst, char *_src, size_t len) {
 	int ret = 0;
 	int match;
 	char *src = _src;
@@ -123,8 +135,7 @@ static int unescape(char *_dst, char *_src, size_t len)
 	return ret;
 }
 
-static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len)
-{
+static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len) {
 	int ret;
 	struct spi_ioc_transfer tr = {
 		.tx_buf = (unsigned long)tx,
@@ -163,8 +174,7 @@ static void transfer(int fd, uint8_t const *tx, uint8_t const *rx, size_t len)
 	// usleep(200000);
 }
 
-static void transfer_escaped_string(int fd, char *str)
-{
+static void transfer_escaped_string(int fd, char *str) {
 	size_t size = strlen(str);
 	uint8_t *tx;
 	uint8_t *rx;
@@ -183,6 +193,7 @@ static void transfer_escaped_string(int fd, char *str)
 	free(tx);
 }
 
+// initialize SPI
 int open_spi(const char *device) {
 	int ret;
 	int fd = open(device, O_RDWR);
@@ -229,6 +240,7 @@ int open_spi(const char *device) {
 	return fd;
 }
 
+// get an int value (4 bytes) from SPI
 int read_int_spi(int spi_fd, pthread_mutex_t lock, uint8_t command) {
 	uint8_t tx = 'r';
 	uint8_t xx;
@@ -243,6 +255,7 @@ int read_int_spi(int spi_fd, pthread_mutex_t lock, uint8_t command) {
 	return rx.val;	
 }
 
+// get a float value (4 bytes) from SPI
 int read_float_spi(int spi_fd, pthread_mutex_t lock, uint8_t command) {
 	uint8_t tx = 'r';
 	uint8_t xx;
@@ -257,6 +270,7 @@ int read_float_spi(int spi_fd, pthread_mutex_t lock, uint8_t command) {
 	return rx.val;	
 }
 
+// send one byte-command to SPI
 uint8_t send_spi(int spi_fd, pthread_mutex_t lock, uint8_t command) {
 	uint8_t ret = 0;
 	pthread_mutex_lock(&lock);
@@ -265,6 +279,7 @@ uint8_t send_spi(int spi_fd, pthread_mutex_t lock, uint8_t command) {
 	return ret;
 }
 
+// Commands for the Irrigator
 static inline void go_forward() {
 	send_spi(fd1, lock1, 'w');
 }
@@ -313,10 +328,12 @@ static inline void off_pump() {
 	send_spi(fd1, lock1, 'n');
 }
 
+// Run the AI script (used TFLite in Python3)
 int run_ai() {
 	return system("./run-all-models.sh");
 }
 
+// Async method that reads the sensors from SPI
 void* read_sensors(void *args) {
 	int t = 0;
 	while (run_flag) {
@@ -344,9 +361,12 @@ void* read_sensors(void *args) {
 	return NULL;
 }
 
+// Main loop
 int main() {
+	// handle SIGINT (Ctrl+C)
 	signal(SIGINT, sigint_handler);
 
+	// init SPI
 	fd1 = open_spi(device1);
 	fd2 = open_spi(device2);
 	
@@ -359,21 +379,23 @@ int main() {
         	return 1; 
     	}
 
+	// launch sensors reading thread
 	asynctask(read_sensors, NULL);
 
 	// wait a bit
 	sleep(2);
 
+	// main loop
 	while (run_flag) {		
 		go_forward();
-		if (dist1 < 100 || dist2 < 100) {
-		// if (dist1 < 100) {
+		if (dist1 < 100 || dist2 < 100) {		
 			stop();
 			usleep(250000);
 			on_light();
-			// sleep(1);
+			// run plantand pot  detection
 			int ret = run_ai();
 			printf("AI returned: %d\n", ret);
+			// if AI detected a plant or a pot -> irrigate
 			if ((ret >> 8) == 1) {
 				printf("Plant detected!\n");
 				go_forward();
